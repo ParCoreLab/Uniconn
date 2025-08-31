@@ -60,5 +60,9 @@ UNICONN_USE_HOST_ONLY=1 or UNICONN_USE_LIMITED_DEVICE=1 or UNICONN_USE_FULL_DEVI
 ```
 
 
-# Acknowledgment
+# Acknowledgement
 This project has received funding from the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation programme (grant agreement No 949587).
+
+This material is based upon work supported by the U.S. Department of Energy, Office of Science, Office of Advanced Scientific Computing Research, Scientific Discovery through Advanced Computing (SciDAC) program under Award Number DE-AC02-05CH11231, and used resources of the National Energy Research Scientific Computing Center (NERSC).
+
+We acknowledge EuroHPC Joint Undertaking for awarding the project ID EHPC-DEV-2024D10-091 access to the MareNostrum5 supercomputer in Spain and the LUMI supercomputer in Finland.
