@@ -1,0 +1,12 @@
+#!/bin/bash
+
+Uniconn_Dir=
+source $Uniconn_Dir/scripts/perlmutter/env.sh
+
+cd $Uniconn_Dir
+rm -rf build
+cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DUNICONN_ENABLE_CUDA=ON \
+    -DUNICONN_ENABLE_GPUCCL=ON -DUNICONN_ENABLE_GPUSHMEM=ON -DUNICONN_ENABLE_EXAMPLES=ON \
+    -DCMAKE_INSTALL_PREFIX=install -DCMAKE_CUDA_ARCHITECTURES="80" -DCMAKE_CUDA_HOST_COMPILER=CC -DCMAKE_CXX_COMPILER=CC -DCMAKE_LINKER=CC
+cd build
+make -j install

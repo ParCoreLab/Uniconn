@@ -1,0 +1,132 @@
+#pragma once
+
+#define UNC_VERSION_MAJOR "@UNICONN_VERSION_MAJOR@"
+#define UNC_VERSION_MINOR "@UNICONN_VERSION_MINOR@"
+#define UNC_VERSION_PATCH "@UNICONN_VERSION_PATCH@"
+#define UNC_VERSION "@UNICONN_VERSION@"
+#define UNC_GIT_VERSION "@UNICONN_GIT_VERSION@"
+
+#cmakedefine UNC_HAS_CUDA
+#cmakedefine UNC_HAS_ROCM
+#cmakedefine UNC_HAS_GPUCCL
+#cmakedefine UNC_HAS_GPUSHMEM
+
+#if defined UNC_HAS_ROCM
+#include <hip/hip_runtime.h>
+#include <hip/hip_cooperative_groups.h>
+#define UNC_GPU_RUNTIME_PREFIX hip
+#define UNC_GPU_DRV_SUCCESS hipSuccess
+#elif defined UNC_HAS_CUDA
+#if __CUDACC__
+#include <cuda_runtime.h>
+#else
+#include <cuda_runtime_api.h>
+#endif
+#include <cooperative_groups.h>
+#define UNC_GPU_RUNTIME_PREFIX cuda
+#define UNC_GPU_DRV_SUCCESS CUDA_SUCCESS
+#else
+#error "Define UNC_HAS_ROCM or UNC_HAS_CUDA"
+#endif
+namespace cg = cooperative_groups;
+
+// The layers of indirection begin
+#if defined UNC_GPU_RUNTIME_PREFIX
+#define UNC_ADD_PREFIX_(prefix, rest) prefix##rest
+#define UNC_ADD_PREFIX(prefix, rest) UNC_ADD_PREFIX_(prefix, rest)
+#define UNC_GPU_RT(symb) UNC_ADD_PREFIX(UNC_GPU_RUNTIME_PREFIX, symb)
+
+// Functions
+#define UncGpuDeviceGetAttribute UNC_GPU_RT(DeviceGetAttribute)
+#define UncGpuDeviceGetStreamPriorityRange UNC_GPU_RT(DeviceGetStreamPriorityRange)
+#define UncGpuDeviceSynchronize UNC_GPU_RT(DeviceSynchronize)
+#define UncGpuEventCreate UNC_GPU_RT(EventCreate)
+#define UncGpuEventCreateWithFlags UNC_GPU_RT(EventCreateWithFlags)
+#define UncGpuEventDestroy UNC_GPU_RT(EventDestroy)
+#define UncGpuEventElapsedTime UNC_GPU_RT(EventElapsedTime)
+#define UncGpuEventQuery UNC_GPU_RT(EventQuery)
+#define UncGpuEventRecord UNC_GPU_RT(EventRecord)
+#define UncGpuEventSynchronize UNC_GPU_RT(EventSynchronize)
+#define UncGpuGetDevice UNC_GPU_RT(GetDevice)
+#define UncGpuGetDeviceCount UNC_GPU_RT(GetDeviceCount)
+#define UncGpuGetDeviceProperties UNC_GPU_RT(GetDeviceProperties)
+#define UncGpuGetErrorString UNC_GPU_RT(GetErrorString)
+#define UncGpuHostGetDevicePointer UNC_GPU_RT(HostGetDevicePointer)
+#define UncGpuHostRegister UNC_GPU_RT(HostRegister)
+#define UncGpuHostRegisterDefault UNC_GPU_RT(HostRegisterDefault)
+#define UncGpuHostUnregister UNC_GPU_RT(HostUnregister)
+#define UncGpuMemcpy UNC_GPU_RT(Memcpy)
+#define UncGpuMemcpyToSymbol UNC_GPU_RT(MemcpyToSymbol)
+#define UncGpuMemcpyFromSymbol UNC_GPU_RT(MemcpyFromSymbol)
+#define UncGpuMemcpyAsync UNC_GPU_RT(MemcpyAsync)
+#define UncGpuMemcpyToSymbolAsync UNC_GPU_RT(MemcpyToSymbolAsync)
+#define UncGpuMemcpyFromSymbolAsync UNC_GPU_RT(MemcpyFromSymbolAsync)
+#define UncGpuMemset UNC_GPU_RT(Memset)
+#define UncGpuMemsetAsync UNC_GPU_RT(MemsetAsync)
+#define UncGpuSetDevice UNC_GPU_RT(SetDevice)
+#define UncGpuStreamCreate UNC_GPU_RT(StreamCreate)
+#define UncGpuStreamCreateWithPriority UNC_GPU_RT(StreamCreateWithPriority)
+#define UncGpuStreamCreateWithFlags UNC_GPU_RT(StreamCreateWithFlags)
+#define UncGpuStreamDestroy UNC_GPU_RT(StreamDestroy)
+#define UncGpuStreamSynchronize UNC_GPU_RT(StreamSynchronize)
+#define UncGpuStreamQuery UNC_GPU_RT(StreamQuery)
+#define UncGpuStreamWaitEvent UNC_GPU_RT(StreamWaitEvent)
+#define UncGpuMalloc UNC_GPU_RT(Malloc)
+#define UncGpuMallocManaged UNC_GPU_RT(MallocManaged)
+#define UncGpuFree UNC_GPU_RT(Free)
+#define UncGpuLaunchKernel UNC_GPU_RT(LaunchKernel)
+#define UncGpuLaunchCooperativeKernel UNC_GPU_RT(LaunchCooperativeKernel)
+
+// Types
+#define UncGpuMemcpyKind UNC_GPU_RT(MemcpyKind)
+#define UncGpuStream_t UNC_GPU_RT(Stream_t)
+#define UncGpuEvent_t UNC_GPU_RT(Event_t)
+#define UncGpuError_t UNC_GPU_RT(Error_t)
+
+// Enum values
+#define UncGpuErrorNotReady UNC_GPU_RT(ErrorNotReady)
+#define UncGpuEventDisableTiming UNC_GPU_RT(EventDisableTiming)
+#define UncGpuMemcpyDefault UNC_GPU_RT(MemcpyDefault)
+#define UncGpuMemcpyDeviceToDevice UNC_GPU_RT(MemcpyDeviceToDevice)
+#define UncGpuMemcpyDeviceToHost UNC_GPU_RT(MemcpyDeviceToHost)
+#define UncGpuMemcpyHostToDevice UNC_GPU_RT(MemcpyHostToDevice)
+#define UncGpuStreamDefault UNC_GPU_RT(StreamDefault)
+#define UncGpuSuccess UNC_GPU_RT(Success)
+
+// Special APIs
+#if defined UNC_HAS_ROCM
+#define UncGpuFreeHost hipHostFree
+#define UncGpuMallocHost hipHostMalloc
+#define UncGpuDeviceProp_t hipDeviceProp_t
+
+#include <hip/hip_version.h>
+#if HIP_VERSION < 50600000
+#define UncGpuDefaultEventFlags hipEventDefault
+#define UncGpuNoTimingEventFlags hipEventDisableTiming
+#else
+#define UncGpuDefaultEventFlags hipEventDisableSystemFence
+#define UncGpuNoTimingEventFlags hipEventDisableTiming | hipEventDisableSystemFence
+#endif
+
+#elif defined UNC_HAS_CUDA
+#define UncGpuFreeHost cudaFreeHost
+#define UncGpuMallocHost cudaMallocHost
+#define UncGpuDeviceProp_t cudaDeviceProp
+#define UncGpuDefaultEventFlags cudaEventDefault
+#define UncGpuNoTimingEventFlags cudaEventDisableTiming
+#endif
+#endif  // defined UNC_GPU_RUNTIME_PREFIX
+
+/* Do not change this (POSIX requires it be 16). Includes trailing null. */
+#define UNC_MAX_THREAD_NAME_LEN 16
+
+/** Enable various sanity checks, generally light-weight. */
+#cmakedefine UNC_DEBUG
+#cmakedefine UNC_DEBUG_HANG_CHECK
+
+#cmakedefine UNC_HAS_PROF
+#cmakedefine UNC_HAS_NVPROF
+#cmakedefine UNC_HAS_ROCTRACER
+
+/** Whether we built with an MPI that supports large counts. */
+#cmakedefine UNC_HAS_LARGE_COUNT_MPI

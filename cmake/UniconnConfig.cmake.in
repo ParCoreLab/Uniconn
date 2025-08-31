@@ -1,0 +1,158 @@
+include(CMakeFindDependencyMacro)
+
+list(APPEND CMAKE_MODULE_PATH "@CMAKE_MODULE_LOCATION@")
+
+include(${CMAKE_CURRENT_LIST_DIR}/UniconnConfigVersion.cmake)
+set(UNICONN_VERSION ${PACKAGE_VERSION})
+
+set(UNC_HAS_CUDA @UNC_HAS_CUDA@)
+set(UNC_HAS_ROCM @UNC_HAS_ROCM@)
+set(UNC_HAS_GPUCCL @UNC_HAS_GPUCCL@)
+set(UNC_HAS_GPUSHMEM @UNC_HAS_GPUSHMEM@)
+
+option(UNICONN_USE_MPI "Use MPI in application." FALSE)
+option(UNICONN_USE_GPUCCL "Use GPUCCL in application." FALSE)
+option(UNICONN_USE_GPUSHMEM "Use GPUSHMEM in application." FALSE)
+option(UNICONN_USE_HOST_ONLY "Use only host only APIs in application." FALSE)
+option(UNICONN_USE_LIMITED_DEVICE "Use limited device functionality of GPUSHMEM in application." FALSE)
+option(UNICONN_USE_FULL_DEVICE "Use full device functionality of GPUSHMEM in application." FALSE)
+
+if(UNICONN_USE_MPI AND UNICONN_USE_GPUCCL)
+  message(FATAL_ERROR
+    "Please only use either MPI or GPUCCL.")
+endif()
+
+if(UNICONN_USE_MPI AND UNICONN_USE_GPUSHMEM)
+  message(FATAL_ERROR
+    "Please only use either MPI or GPUSHMEM.")
+endif()
+
+if(UNICONN_USE_GPUSHMEM AND UNICONN_USE_GPUCCL)
+  message(FATAL_ERROR
+    "Please only use either GPUSHMEM or GPUCCL.")
+endif()
+
+if(UNICONN_USE_HOST_ONLY AND UNICONN_USE_LIMITED_DEVICE)
+  message(FATAL_ERROR
+    "Please only use either HOST_ONLY or LIMITED_DEVICE functionality.")
+endif()
+
+if(UNICONN_USE_HOST_ONLY AND UNICONN_USE_FULL_DEVICE)
+  message(FATAL_ERROR
+    "Please only use either HOST_ONLY or FULL_DEVICE functionality.")
+endif()
+
+if(UNICONN_USE_FULL_DEVICE AND UNICONN_USE_LIMITED_DEVICE)
+  message(FATAL_ERROR
+    "Please only use either FULL_DEVICE or LIMITED_DEVICE functionality.")
+endif()
+
+if((UNICONN_USE_MPI OR UNICONN_USE_GPUCCL) AND (UNICONN_USE_LIMITED_DEVICE OR UNICONN_USE_FULL_DEVICE))
+    message("MPI and GPUCCL only support HOST_ONLY functionality.")
+endif()
+
+find_package(MPI REQUIRED COMPONENTS CXX)
+
+set(MPI_CXX_COMPILER "@MPI_CXX_COMPILER@" CACHE FILEPATH
+    "The MPI CXX compiler wrapper.")
+
+if(UNICONN_USE_MPI)
+    add_compile_definitions(UNC_USE_MPI)
+     add_compile_definitions(UNC_USE_HOST_ONLY)
+endif()
+
+if(UNC_HAS_ROCM)
+    find_dependency(hip)
+
+    set(UNC_ROCM_PATH "@UNC_ROCM_PATH@")
+
+    if(UNC_HAS_GPUCCL)
+        find_dependency(rccl)
+        if(UNICONN_USE_GPUCCL)
+            add_compile_definitions(UNC_USE_GPUCCL)
+             add_compile_definitions(UNC_USE_HOST_ONLY)
+        endif()
+       
+    endif(UNC_HAS_GPUCCL)
+
+    if(UNC_HAS_GPUSHMEM)
+        find_dependency(rocshmem)
+        if(UNICONN_USE_GPUSHMEM)
+            add_compile_definitions(UNC_USE_GPUSHMEM)
+            if(UNICONN_USE_LIMITED_DEVICE)
+                add_compile_definitions(UNC_USE_LIMITED_DEVICE)
+            elseif(UNICONN_USE_FULL_DEVICE)
+                add_compile_definitions(UNC_USE_FULL_DEVICE)
+            else()
+                add_compile_definitions(UNC_USE_HOST_ONLY)
+            endif()
+        endif()
+
+    endif(UNC_HAS_GPUSHMEM)
+
+    set(UNC_HAS_ROCTRACER @UNC_HAS_ROCTRACER@)
+
+    if(UNC_HAS_ROCTRACER)
+        find_dependency(Roctracer COMPONENTS roctx)
+    endif()
+
+elseif(UNC_HAS_CUDA)
+
+    find_dependency(CUDAToolkit)
+
+    if(UNC_HAS_GPUCCL)
+        find_dependency(NCCL)
+        if(UNICONN_USE_GPUCCL)
+            add_compile_definitions(UNC_USE_GPUCCL)
+             add_compile_definitions(UNC_USE_HOST_ONLY)
+        endif()
+    endif(UNC_HAS_GPUCCL)
+
+    if(UNC_HAS_GPUSHMEM)
+        find_dependency(NVSHMEM)
+        if(UNICONN_USE_GPUSHMEM)
+            add_compile_definitions(UNC_USE_GPUSHMEM)
+            if(UNICONN_USE_LIMITED_DEVICE)
+                add_compile_definitions(UNC_USE_LIMITED_DEVICE)
+            elseif(UNICONN_USE_FULL_DEVICE)
+                add_compile_definitions(UNC_USE_FULL_DEVICE)
+            else()
+                add_compile_definitions(UNC_USE_HOST_ONLY)
+            endif()
+        endif()
+    endif(UNC_HAS_GPUSHMEM)
+
+    set(UNC_HAS_NVPROF @UNC_HAS_NVPROF@)
+
+    if(UNC_HAS_NVPROF)
+        set(UNC_HAS_EXTERNAL_NVTX @UNC_HAS_EXTERNAL_NVTX@)
+
+        if(UNC_HAS_EXTERNAL_NVTX)
+            find_dependency(NVTX)
+        endif()
+    endif()
+
+endif(UNC_HAS_ROCM)
+
+@PACKAGE_INIT@
+
+set(_TMP_INCLUDE_DIRS "@PACKAGE_INCLUDE_INSTALL_DIRS@")
+
+foreach(_DIR ${_TMP_INCLUDE_DIRS})
+    set_and_check(_INCLUDE_DIR "${_DIR}")
+    list(APPEND UNICONN_INCLUDE_DIRS "${_INCLUDE_DIR}")
+endforeach(_DIR "${_TMP_INCLUDE_DIRS}")
+
+set(_TMP_LIBRARY_DIRS "@PACKAGE_LIB_INSTALL_DIR@")
+
+foreach(_DIR ${_TMP_LIBRARY_DIRS})
+    set_and_check(_LIBRARY_DIR "${_DIR}")
+    list(APPEND UNICONN_LIBRARY_DIRS "${_LIBRARY_DIR}")
+endforeach(_DIR ${_TMP_LIBRARY_DIRS})
+
+if(NOT TARGET UNICONN::Uniconn)
+    include(${CMAKE_CURRENT_LIST_DIR}/UniconnTargets.cmake)
+endif()
+
+
+set(Uniconn_LIBRARIES UNICONN::Uniconn)
